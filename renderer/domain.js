@@ -349,12 +349,16 @@
 
   function updateTodo(todo, text, deadline) {
     if (!todo || typeof todo !== 'object') return null;
-    const normalized = createTodo(text, deadline, todo.id, todo.createdAt);
-    if (!normalized) return null;
+    const keepsUnscheduled = !String(deadline || '').trim() && !todo.deadline;
+    const normalized = keepsUnscheduled
+      ? { ...todo, text: String(text || '').trim(), deadline: '' }
+      : createTodo(text, deadline, todo.id, todo.createdAt);
+    if (!normalized || !normalized.text) return null;
     return {
       ...todo,
       ...normalized,
       done: todo.done === true,
+      ...(todo.deadline !== normalized.deadline ? { datePrecision: normalized.deadline ? 'time' : 'none' } : {}),
       remindedAt: Date.parse(String(todo.deadline || '')) === Date.parse(normalized.deadline)
         ? Math.max(0, Number(todo.remindedAt) || 0)
         : 0,

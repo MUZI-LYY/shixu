@@ -9,6 +9,18 @@ function subscribe(channel, handler) {
 
 contextBridge.exposeInMainWorld('notchAPI', {
   platform: process.platform,
+  runWorkflow: payload => ipcRenderer.invoke('workflow:run', payload),
+  listCalendars: () => ipcRenderer.invoke('calendar:list'),
+  saveCalendarEvent: payload => ipcRenderer.invoke('calendar:save', payload),
+  getVoiceShortcuts: () => ipcRenderer.invoke('voice-shortcuts:get'),
+  setVoiceShortcuts: payload => ipcRenderer.invoke('voice-shortcuts:set', payload),
+  onVoiceShortcut: cb => subscribe('voice-shortcuts:action', (_event, value) => cb(value)),
+  onVoiceShortcutsChanged: cb => subscribe('voice-shortcuts:changed', (_event, value) => cb(value)),
+  planTasks: (payload) => ipcRenderer.invoke('assistant:plan', payload),
+  translateText: (text) => ipcRenderer.invoke('assistant:translate', text),
+  recognizeImage: (payload) => ipcRenderer.invoke('assistant:ocr', payload),
+  copyText: (text) => ipcRenderer.invoke('assistant:copy', text),
+  readCalendar: (payload) => ipcRenderer.invoke('assistant:calendar', payload),
   setMode: (mode) => ipcRenderer.invoke('window:set-mode', mode),
   beginCollapse: () => ipcRenderer.invoke('window:begin-collapse'),
   setTab: (tab) => ipcRenderer.invoke('window:set-tab', tab),

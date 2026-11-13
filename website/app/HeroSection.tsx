@@ -9,7 +9,7 @@ import {
 } from "react";
 import { assetPath } from "./assetPath.mjs";
 import { DOWNLOAD_URL, MARQUEE_ITEMS, NAV_ITEMS, TAB_ITEMS } from "./landingContent";
-import { LATEST_RELEASE_API_URL, selectMacDownloadUrl, selectWindowsDownloadUrl } from "./landingDownload.mjs";
+import { LATEST_RELEASE_API_URL, selectMacDownloadUrl } from "./landingDownload.mjs";
 import EchoText from "./reactbits/EchoText/EchoText";
 import Magnet from "./reactbits/Magnet/Magnet";
 import {
@@ -33,7 +33,7 @@ export default function HeroSection() {
   const [panelState, setPanelState] = useState<HeroPanelState>(INITIAL_HERO_PANEL_STATE);
   const [bootPhase, setBootPhase] = useState<HeroBootPhase>("loading");
   const [entranceComplete, setEntranceComplete] = useState(false);
-  const [downloadPending, setDownloadPending] = useState<"mac" | "windows" | null>(null);
+  const [downloadPending, setDownloadPending] = useState<"mac" | null>(null);
   const expanded = panelState === "expanded";
 
   const noMotion = reducedMotion === true;
@@ -98,7 +98,7 @@ export default function HeroSection() {
     setPanelState((current) => nextHeroPanelState(current, entranceComplete));
   };
 
-  const startDownload = async (event: ReactMouseEvent<HTMLAnchorElement>, platform: "mac" | "windows") => {
+  const startDownload = async (event: ReactMouseEvent<HTMLAnchorElement>, platform: "mac") => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
     event.preventDefault();
     if (downloadPending) return;
@@ -111,7 +111,7 @@ export default function HeroSection() {
       });
       if (!response.ok) throw new Error(`GitHub release request failed: ${response.status}`);
       const release = await response.json();
-      const downloadUrl = platform === 'windows' ? selectWindowsDownloadUrl(release) : selectMacDownloadUrl(release);
+      const downloadUrl = selectMacDownloadUrl(release);
       window.location.assign(downloadUrl ?? DOWNLOAD_URL);
     } catch {
       window.location.assign(DOWNLOAD_URL);
@@ -142,7 +142,7 @@ export default function HeroSection() {
         transition={{ duration: 0.6, delay: contentVisible ? 0.12 : 0, ease: [0.22, 1, 0.36, 1] }}
       >
         <EchoText
-          text="TO-DO PANEL"
+          text="拾序"
           tint="#181ecb"
           fontSize="inherit"
           fontWeight="inherit"
@@ -191,14 +191,14 @@ export default function HeroSection() {
             >
               {/* Product UI is shown only through real screenshots from the running app. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="hero-panel-image hero-panel-image-expanded" src={assetPath("/product-captures/home.jpg")} alt="TO-DO Panel 真实首页展开态" />
+              <img className="hero-panel-image hero-panel-image-expanded" src={assetPath("/product-captures/home.jpg")} alt="上游 TO-DO Panel 首页界面参考" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="hero-panel-image hero-panel-image-collapsed" src={assetPath("/hero/panel-collapsed.png")} alt="TO-DO Panel 真实折叠态" />
+              <img className="hero-panel-image hero-panel-image-collapsed" src={assetPath("/hero/panel-collapsed.png")} alt="上游 TO-DO Panel 折叠态参考" />
               <button
                 className="hero-panel-trigger"
                 type="button"
                 aria-expanded={expanded}
-                aria-label={expanded ? "折叠 TO-DO Panel" : "展开 TO-DO Panel"}
+                aria-label={expanded ? "折叠界面参考" : "展开界面参考"}
                 aria-disabled={!entranceComplete}
                 onClick={togglePanel}
               />
@@ -227,7 +227,7 @@ export default function HeroSection() {
         <a className="brand-lockup" href="#top">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={assetPath("/favicon.png")} alt="" width="34" height="34" />
-          <span>TO-DO PANEL</span>
+          <span>拾序</span>
         </a>
         <div className="hero-nav-links">
           {NAV_ITEMS.map(([label, href]) => (
@@ -250,7 +250,8 @@ export default function HeroSection() {
         animate={contentVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
         transition={{ duration: 0.65, delay: contentVisible ? 0.5 : 0, ease: [0.22, 1, 0.36, 1] }}
       >
-        <p>把灵动岛，变成随手可用的工作台</p>
+        <p>把零散记录，整理成接下来要做的事</p>
+        <small>Mac Apple Silicon 试用版 · 以下截图与录屏为上游界面参考，最新功能请以 Release 说明为准。</small>
         <div className="hero-actions">
           <Magnet
             padding={70}
@@ -271,19 +272,7 @@ export default function HeroSection() {
               下载 macOS 版本
             </a>
           </Magnet>
-          <Magnet padding={70} magnetStrength={6} disabled={noMotion} wrapperClassName="hero-download-magnet" data-magnet="download-windows">
-            <a
-              className="landing-cta landing-cta-primary"
-              href={DOWNLOAD_URL}
-              aria-busy={downloadPending === 'windows'}
-              aria-label="下载 Windows 版本（Windows 10/11，x64）"
-              data-primary-action
-              data-direct-download="windows"
-              onClick={(event) => startDownload(event, 'windows')}
-            >
-              下载 Windows 版本
-            </a>
-          </Magnet>
+
         </div>
       </motion.div>
     </section>

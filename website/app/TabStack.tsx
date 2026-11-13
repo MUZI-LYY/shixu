@@ -21,7 +21,7 @@ function TabCard({ item, index, progress, reducedMotion, loadMedia }: { item: Ta
           fallbackSrc={item.capturePoster}
           posterSrc={item.capturePoster}
           kind={item.captureKind}
-          alt={`${item.title}全桌面真实操作录屏`}
+          alt={`上游 TO-DO Panel 界面参考：${item.title}操作录屏`}
           className="tab-capture"
           fullCapture
           deferred={!loadMedia}

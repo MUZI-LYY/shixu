@@ -14,6 +14,7 @@ const {
   dialog,
   desktopCapturer,
   ClipboardItem,
+  powerMonitor,
 } = require('electron');
 const WebSocket = require('ws');
 const path = require('path');
@@ -69,8 +70,8 @@ const {
 
 // Keep the historical data directory so upgrading users retain notes, links,
 // recordings and encrypted settings after the public product rename.
-const LEGACY_USER_DATA_PATH = path.join(app.getPath('appData'), 'Dynamic Panel');
-app.setName('TO-DO Panel');
+const LEGACY_USER_DATA_PATH = path.join(app.getPath('appData'), 'Mac Voice Workspace');
+app.setName('拾序');
 // Honor Electron's standard profile switch for isolated automated tests.
 app.setPath('userData', app.commandLine.getSwitchValue('user-data-dir') || LEGACY_USER_DATA_PATH);
 
@@ -176,7 +177,7 @@ function makeNotchPng(scale) {
 }
 
 function createNotchTrayIcon() {
-  if (process.platform === 'win32') return nativeImage.createFromPath(path.join(__dirname, 'build', 'to-do-panel-icon.png')).resize({ width: 32, height: 32 });
+  if (process.platform === 'win32') return nativeImage.createFromPath(path.join(__dirname, 'build', 'shixu-icon.png')).resize({ width: 32, height: 32 });
   const png2x = makeNotchPng(2);
   const icon = nativeImage.createFromBuffer(png2x, { scaleFactor: 2 });
   icon.setTemplateImage(true);
@@ -196,6 +197,7 @@ const COLLAPSED_MIN_HEIGHT = 38;
 const EXPANDED_WIDTH = 1240;
 const EXPANDED_PANEL_HEIGHT = 540;
 const TAB_SIZES = {
+  ocr: { width: EXPANDED_WIDTH, panelHeight: EXPANDED_PANEL_HEIGHT },
   home: { width: EXPANDED_WIDTH, panelHeight: EXPANDED_PANEL_HEIGHT },
   todo: { width: EXPANDED_WIDTH, panelHeight: EXPANDED_PANEL_HEIGHT },
   notes: { width: EXPANDED_WIDTH, panelHeight: EXPANDED_PANEL_HEIGHT },
@@ -259,7 +261,7 @@ const TASK_NOTIFICATION_DEDUPE_MS = 2000;
 const TASK_NOTIFICATION_MAX_QUEUE = 5;
 const TASK_NOTIFICATION_BODY_LIMIT = 64 * 1024;
 const TASK_NOTIFICATION_HOST = '127.0.0.1';
-const TASK_NOTIFICATION_PORT = 43821;
+const TASK_NOTIFICATION_PORT = 43822;
 // /notify/<source> 的来源白名单：只放行已知 Agent，其余一律 404。
 const TASK_NOTIFICATION_SOURCES = new Set(['codex', 'gpt', 'claude']);
 const TODO_REMINDER_LEAD_MS = 60 * 60 * 1000;
@@ -1396,7 +1398,7 @@ function readAppSettings() {
     features,
     shortcut: isValidPanelShortcut(stored.shortcut) ? stored.shortcut : 'Space',
     defaultTab: normalizeDefaultTabPreference(stored.defaultTab, features),
-    agentMonitor: stored.agentMonitor !== false,
+    agentMonitor: stored.agentMonitor === true,
     musicPlayer: normalizeMusicPreference(stored.musicPlayer),
     musicAutomation: Array.isArray(stored.musicAutomation)
       ? stored.musicAutomation.filter((id) => typeof id === 'string').slice(0, 16)
@@ -1470,7 +1472,7 @@ function copyWorkspaceAssets(sourceRoot, targetRoot) {
 
 async function chooseWorkspaceFolder() {
   const result = await showOwnedOpenDialog({
-    title: '选择 TO-DO Panel 数据文件夹',
+    title: '选择拾序数据文件夹',
     properties: ['openDirectory', 'createDirectory'],
   });
   const selected = !result.canceled && result.filePaths && result.filePaths[0];
@@ -1505,7 +1507,9 @@ function isValidPanelShortcut(shortcut) {
     && /^(?:[A-Z0-9]|F(?:[1-9]|1[0-9]|2[0-4])|Space|Tab|Escape|Left|Right|Up|Down|Home|End|PageUp|PageDown|Backspace|Delete|Enter)$/.test(key);
 }
 
+let voiceShortcutsService;
 function setPanelShortcut(shortcut) {
+  if (voiceShortcutsService?.hasConflict(shortcut)) return false;
   if (!isValidPanelShortcut(shortcut)) return false;
   const previousShortcut = configuredShortcut || 'Space';
   stopHoverSpaceShortcut();
@@ -1684,8 +1688,8 @@ function refreshTrayMenu() {
       click: () => {
         dialog.showMessageBox({
           type: 'info',
-          title: '关于 TO-DO Panel',
-          message: 'TO-DO Panel',
+          title: '关于拾序',
+          message: '拾序',
           detail:
             `版本 ${app.getVersion()}\n\n一个开源、常驻屏幕顶部的本地工作台。工作区数据默认保存在本机；账号密码与 API Key 由系统安全存储加密。\n\nMIT License`,
           buttons: ['查看 GitHub', '好'],
@@ -1709,7 +1713,7 @@ function refreshTrayMenu() {
 
 function createTray() {
   tray = new Tray(createNotchTrayIcon());
-  tray.setToolTip('TO-DO Panel');
+  tray.setToolTip('拾序');
   tray.on('click', () => {
     if (!mainWindow) return;
     if (!mainWindow.isVisible()) {
@@ -3961,7 +3965,7 @@ function ensureFirstRunAutoLaunch() {
   const marker = path.join(app.getPath('userData'), '.first-run-done');
   if (fs.existsSync(marker)) return;
   try {
-    setAutoLaunch(true);
+    setAutoLaunch(false);
     fs.writeFileSync(marker, String(Date.now()));
   } catch (e) {
     // ignore
@@ -4003,6 +4007,14 @@ app.whenReady().then(() => {
   ensureClipImagesDir();
   ensureRecordingsDir();
   applyAppSettings();
+  voiceShortcutsService = require('./main/voice-shortcuts').registerVoiceShortcuts({
+    app, ipcMain, globalShortcut, powerMonitor, getWindow: () => mainWindow,
+    getPanelShortcut: () => configuredShortcut,
+    onAction: action => {
+      if (['voice-start', 'meeting-toggle'].includes(action.action)) summonPanel();
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('voice-shortcuts:action', action);
+    },
+  });
   startTaskNotificationServer();
   startTodoInboxWatcher();
   showPermissionsOnboardingIfNeeded();
@@ -4017,7 +4029,7 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {});
 
 // 退出前给渲染层一次机会把「撤销窗口内尚未真正执行的删除」落地（删音频文件、删保险库记录），
-// 否则删了一半就退出：密钥还留在保险库里，录音的音频成了孤儿文件。最多等 0.8 秒。
+// 否则删了一半就退出：密钥还留在保险库里，录音的音频成了孤儿文件。等待录音结束与保存，最多 15 秒。
 let quitFlushStarted = false;
 app.on('before-quit', (event) => {
   const canFlush = mainWindow && !mainWindow.isDestroyed() && !mainWindow.webContents.isDestroyed();
@@ -4030,7 +4042,7 @@ app.on('before-quit', (event) => {
       finished = true;
       setTimeout(() => app.quit(), 150); // 留给已发出的文件删除落盘
     };
-    const timer = setTimeout(finish, 800);
+    const timer = setTimeout(finish, 15000);
     ipcMain.once('app:flush-done', () => {
       clearTimeout(timer);
       finish();
@@ -4054,4 +4066,23 @@ app.on('will-quit', () => {
   closeAllTranscriptionSessions();
   globalShortcut.unregisterAll();
   stopClipboardPolling();
+});
+
+require('./main/assistant').registerAssistant({
+  ipcMain,
+  dialog,
+  clipboard,
+  getWindow: () => mainWindow,
+  config: resolveLlmConfig,
+  validateUrl: validatePublicHttpUrl,
+  beginInteraction: () => { transientSystemInteractionRequests += 1; },
+  endInteraction: () => {
+    transientSystemInteractionRequests = Math.max(0, transientSystemInteractionRequests - 1);
+  },
+});
+
+require('./main/calendar').registerCalendar({
+  ipcMain, getWindow: () => mainWindow, storageDir: app.getPath('userData'),
+  beginInteraction: () => { transientSystemInteractionRequests += 1; },
+  endInteraction: () => { transientSystemInteractionRequests = Math.max(0, transientSystemInteractionRequests - 1); },
 });

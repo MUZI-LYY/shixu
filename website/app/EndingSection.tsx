@@ -30,16 +30,16 @@ export default function EndingSection() {
           className="ending-wordmark"
           style={reducedMotion ? undefined : { y: wordmarkY }}
         >
-          TO-DO PANEL
+          拾序
         </motion.h2>
 
         <motion.div
           className="ending-island"
           style={reducedMotion ? undefined : { y: islandY, scale: islandScale }}
         >
-          {/* This is the real collapsed-state capture from the running product. */}
+          {/* Upstream reference capture, not a current Shixu verification screenshot. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={assetPath("/hero/panel-collapsed.png")} alt="TO-DO Panel 真实折叠态" />
+          <img src={assetPath("/hero/panel-collapsed.png")} alt="上游 TO-DO Panel 折叠态参考" />
         </motion.div>
 
         <motion.div className="ending-copy">
@@ -47,7 +47,7 @@ export default function EndingSection() {
           <p>需要时展开，用完即收起</p>
         </motion.div>
 
-        <footer><span>macOS 13+ · Windows 10/11 x64 · MIT</span><span>© 2026 TO-DO Panel</span></footer>
+        <footer><span>macOS 13+ · Apple Silicon · 试用版 · MIT</span><span>拾序 · 基于 TO-DO Panel（MIT）</span></footer>
       </div>
     </section>
   );

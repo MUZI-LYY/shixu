@@ -704,7 +704,7 @@ async function main() {
             };
           });
         return {
-          surface: { left: surface.left, top: surface.top, right: surface.right, bottom: surface.bottom },
+          surface: { left: surface.left, top: surface.top, right: surface.right, bottom: surface.top + document.getElementById('home-bento').scrollHeight },
           tiles,
           sizeControls: [...document.querySelectorAll('#home-bento [data-widget-size-cycle]')].map((control) => ({
             hidden: control.hidden,
@@ -1176,13 +1176,9 @@ async function main() {
     `);
     assert.notEqual(autoLayoutMotionAudit.afterSize, autoLayoutMotionAudit.beforeSize);
     assert.equal(autoLayoutMotionAudit.ghostCount, 0, '尺寸切换不得用空外壳遮成黑块');
-    assert.ok(
-      autoLayoutMotionAudit.tileDurations.length > 0
-        && autoLayoutMotionAudit.tileDurations.every((duration) => duration >= 500 && duration <= 650),
-      'Auto Layout 应保留过程感，也不得拖沓'
-    );
+    assert.equal(autoLayoutMotionAudit.tileDurations.length, 0, '紧凑工具区采用固定尺寸，隐藏的旧尺寸控件不得引入重排动画');
     assert.ok(autoLayoutMotionAudit.minimumTileOpacity >= 0.72, '重排期间真实卡片不得熄灭成黑块');
-    assert.equal(autoLayoutMotionAudit.realTileHasScale, true, '真实卡片应恢复连续 FLIP 几何过渡');
+    assert.equal(autoLayoutMotionAudit.realTileHasScale, false, '固定工具卡片保持稳定尺寸');
     assert.equal(autoLayoutMotionAudit.ghostsAfter, 0, 'Auto Layout ghost 必须在动画后清理');
     assert.equal(autoLayoutMotionAudit.tileAnimationsAfter, 0, '重排动画结束后不得残留组件动画');
     assert.equal(autoLayoutMotionAudit.rapidDuplicateGhosts, false, '连续切换必须先清理上一轮 Auto Layout ghost');

@@ -4,22 +4,6 @@ import { existsSync } from "node:fs";
 
 const moduleUrl = new URL("../app/landingDownload.mjs", import.meta.url);
 
-test("Windows download selects only the current x64 installer in a mixed release", async () => {
-  const { selectWindowsDownloadUrl } = await import(moduleUrl.href);
-  const asset = (name) => ({ name, state: 'uploaded', browser_download_url: `https://example.com/${name}` });
-  const release = { tag_name: 'v1.1.0', assets: [
-    asset('TO-DO-Panel-1.0.7-windows-x64-setup.exe'),
-    asset('TO-DO-Panel-1.1.0-arm64.dmg'),
-    asset('TO-DO-Panel-1.1.0-windows-x64-setup.exe.sha256'),
-    asset('TO-DO-Panel-1.1.0-windows-arm64-setup.exe'),
-    asset('TO-DO-Panel-1.1.0-windows-x64-setup.exe'),
-  ] };
-  assert.equal(selectWindowsDownloadUrl(release), 'https://example.com/TO-DO-Panel-1.1.0-windows-x64-setup.exe');
-  assert.equal(selectWindowsDownloadUrl({ ...release, assets: release.assets.slice(0, 4) }), null);
-  assert.equal(selectWindowsDownloadUrl(null), null);
-  assert.equal(selectWindowsDownloadUrl({ ...release, assets: [{ ...release.assets[4], state: 'new' }] }), null);
-});
-
 test("latest release selection returns the installable Apple Silicon DMG", async () => {
   assert.ok(existsSync(moduleUrl), "landingDownload.mjs must resolve the current installable asset");
   const { selectMacDownloadUrl } = await import(moduleUrl.href);
@@ -27,31 +11,38 @@ test("latest release selection returns the installable Apple Silicon DMG", async
     tag_name: "v1.0.4",
     assets: [
       {
-        name: "TO-DO-Panel-1.0.2-arm64.dmg.sha256",
+        name: "Shixu-1.0.2-arm64.dmg.sha256",
         content_type: "application/octet-stream",
         state: "uploaded",
         browser_download_url: "https://example.com/checksum",
       },
       {
-        name: "TO-DO-Panel-1.0.2-arm64.dmg",
+        name: "Shixu-1.0.2-arm64.dmg",
         content_type: "application/x-apple-diskimage",
         state: "uploaded",
-        browser_download_url: "https://example.com/TO-DO-Panel-1.0.2-arm64.dmg",
+        browser_download_url: "https://example.com/Shixu-1.0.2-arm64.dmg",
       },
       {
-        name: "TO-DO-Panel-1.0.4-arm64.dmg",
+        name: "Shixu-1.0.4-arm64.dmg",
         content_type: "application/x-apple-diskimage",
         state: "uploaded",
-        browser_download_url: "https://example.com/TO-DO-Panel-1.0.4-arm64.dmg",
+        browser_download_url: "https://example.com/Shixu-1.0.4-arm64.dmg",
       },
     ],
   };
 
-  assert.equal(selectMacDownloadUrl(release), "https://example.com/TO-DO-Panel-1.0.4-arm64.dmg");
+  assert.equal(selectMacDownloadUrl(release), "https://example.com/Shixu-1.0.4-arm64.dmg");
 });
 
 test("latest release selection safely falls back when no DMG is published", async () => {
   const { selectMacDownloadUrl } = await import(moduleUrl.href);
   assert.equal(selectMacDownloadUrl({ assets: [] }), null);
   assert.equal(selectMacDownloadUrl(null), null);
+});
+
+test("download never selects another version or upstream installer", async () => {
+  const { selectMacDownloadUrl, LATEST_RELEASE_API_URL } = await import(moduleUrl.href);
+  assert.equal(LATEST_RELEASE_API_URL, "https://api.github.com/repos/MUZI-LYY/shixu/releases/latest");
+  const assets = ["Shixu-0.2.0-arm64.dmg", "TO-DO-Panel-0.2.1-arm64.dmg"].map(name => ({name, state:"uploaded", browser_download_url:`https://example.com/${name}`}));
+  assert.equal(selectMacDownloadUrl({tag_name:"v0.2.1", assets}), null);
 });

@@ -2,25 +2,25 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { assetPath } from "./assetPath.mjs";
 
-const title = "TO-DO Panel — Mac 与 Windows 的贴顶工作台";
-const description = "适用于 macOS 与 Windows 的本地工作台：首页、待办、笔记、链接、录制、密钥与可选剪贴板，数据留在自己的电脑。";
+const title = "拾序 — Mac 个人事务工作台";
+const description = "面向 Mac Apple Silicon 的个人工作台，支持语音待办、待整理、会议整理、每日安排和确认后写入日历。";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://xiaopu-ai.github.io/TO-DO-Panel/"),
+  metadataBase: new URL("https://muzi-lyy.github.io/shixu/"),
   title,
   description,
-  applicationName: "TO-DO Panel",
-  keywords: ["TO-DO Panel", "macOS 刘海", "Mac 待办", "Windows 待办", "本地工作台", "Apple Silicon"],
+  applicationName: "拾序",
+  keywords: ["拾序", "macOS 刘海", "Mac 待办", "本地工作台", "Apple Silicon"],
   icons: { icon: [{ url: assetPath("/favicon.png"), type: "image/png" }], shortcut: assetPath("/favicon.png"), apple: assetPath("/favicon.png") },
   openGraph: {
     type: "website",
     locale: "zh_CN",
-    siteName: "TO-DO Panel",
+    siteName: "拾序",
     title,
     description,
-    images: [{ url: assetPath("/og.png"), width: 1200, height: 630, alt: "TO-DO Panel 官网分享封面" }],
+    images: [{ url: assetPath("/favicon.png"), width: 1024, height: 1024, alt: "拾序深色发光图标" }],
   },
-  twitter: { card: "summary_large_image", title, description, images: [assetPath("/og.png")] },
+  twitter: { card: "summary", title, description, images: [assetPath("/favicon.png")] },
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, colorScheme: "dark", themeColor: "#000000" };

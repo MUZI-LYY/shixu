@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 const moduleUrl = new URL("../app/LandingPage.tsx", import.meta.url);
 
-test("landing page renders both platform downloads in the existing hero", async () => {
+test("landing page renders the Mac trial download in the existing hero", async () => {
   assert.ok(existsSync(moduleUrl), "LandingPage.tsx must render the approved landing experience");
   const { default: LandingPage } = await import(moduleUrl.href);
   const html = renderToStaticMarkup(createElement(LandingPage));
@@ -15,9 +15,11 @@ test("landing page renders both platform downloads in the existing hero", async 
     [...html.matchAll(/data-section="([^"]+)"/g)].map((match) => match[1]),
     ["hero", "marquee", "story", "capabilities", "tabs-intro", "tab-stack", "ending"],
   );
-  assert.equal((html.match(/data-primary-action=/g) || []).length, 2);
-  assert.equal((html.match(/data-direct-download=/g) || []).length, 2);
-  assert.match(html, /下载 Windows 版本/);
+  assert.equal((html.match(/data-primary-action=/g) || []).length, 1);
+  assert.equal((html.match(/data-direct-download=/g) || []).length, 1);
+  assert.doesNotMatch(html, /下载 Windows 版本/);
+  assert.match(html, /上游界面参考/);
+  assert.match(html, /https:\/\/github.com\/MUZI-LYY\/shixu/);
   assert.match(html, /下载 macOS 版本/);
   assert.equal((html.match(/data-secondary-action=/g) || []).length, 0);
   assert.equal((html.match(/data-nav-github=/g) || []).length, 1);
@@ -29,7 +31,7 @@ test("hero renders the approved photographic composition with one real panel tog
   const html = renderToStaticMarkup(createElement(LandingPage));
   const hero = html.slice(html.indexOf('data-section="hero"'), html.indexOf('data-section="marquee"'));
 
-  assert.match(hero, /把灵动岛，变成随手可用的工作台</);
+  assert.match(hero, /把零散记录，整理成接下来要做的事</);
   assert.doesNotMatch(hero, /把灵动岛，变成随手可用的工作台。/);
   assert.match(hero, /class="echo-text hero-echo-text"/);
   assert.match(hero, /color-mix\(in srgb, #181ecb/);

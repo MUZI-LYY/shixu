@@ -100,13 +100,13 @@ test('macOS packaging declares the Electron 44 minimum and least-privilege runti
   assert.match(entitlements, /com\.apple\.security\.cs\.disable-library-validation/);
 });
 
-test('release version and public download entry points stay aligned', () => {
+test('Shixu release version and download entry points stay aligned', () => {
   const readme = fs.readFileSync(readmePath, 'utf8');
   const websiteDownload = fs.readFileSync(websiteDownloadPath, 'utf8');
   const websiteContent = fs.readFileSync(websiteContentPath, 'utf8');
 
-  assert.match(readme, new RegExp(`当前稳定版本：\\*\\*${packageVersion.replaceAll('.', '\\.')}`));
-  assert.match(readme, /https:\/\/github\.com\/xiaopu-ai\/TO-DO-Panel\/releases\/latest/);
-  assert.match(websiteContent, /DOWNLOAD_URL\s*=\s*"https:\/\/github\.com\/xiaopu-ai\/TO-DO-Panel\/releases\/latest"/);
-  assert.match(websiteDownload, /LATEST_RELEASE_API_URL\s*=\s*"https:\/\/api\.github\.com\/repos\/xiaopu-ai\/TO-DO-Panel\/releases\/latest"/);
+  assert.match(readme, new RegExp(`本地试用版本：\\*\\*${packageVersion.replaceAll('.', '\\.')}`));
+  assert.match(readme, /https:\/\/github\.com\/MUZI-LYY\/shixu\/releases\/latest/);
+  assert.match(websiteContent, /DOWNLOAD_URL\s*=\s*"https:\/\/github\.com\/MUZI-LYY\/shixu\/releases\/latest"/);
+  assert.match(websiteDownload, /LATEST_RELEASE_API_URL\s*=\s*"https:\/\/api\.github\.com\/repos\/MUZI-LYY\/shixu\/releases\/latest"/);
 });

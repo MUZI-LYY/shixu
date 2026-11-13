@@ -1423,7 +1423,7 @@
     syncRecordingDraftUi();
     renderHomeModuleSettings();
     document.dispatchEvent(new CustomEvent('notch:recording-state-changed', {
-      detail: { active: recordingBusy },
+      detail: { active: recordingBusy, transcript: currentRecordingText(), feedback: currentRecordingFeedback(), status: recordingStatus },
     }));
   }
 
@@ -1534,6 +1534,7 @@
       else recordings.unshift(recording);
       recordingDraftId = '';
       selectedRecordingId = recording.id;
+      document.dispatchEvent(new CustomEvent('notch:recording-saved', { detail: { id: recording.id, transcript: recording.transcript } }));
       persistRecordings();
       renderRecordings();
       if (recording.transcript && window.notchAPI?.organizeMaterial) {
@@ -1948,6 +1949,13 @@
       createIconButton('reveal-recording', '在文件夹中显示', OPEN_ICON),
       createIconButton('delete-recording', '删除录音', DELETE_ICON, true)
     );
+    const extract = document.createElement('button');
+    extract.type = 'button'; extract.className = 'workspace-button compact'; extract.textContent = '提取待办';
+    extract.addEventListener('click', () => document.dispatchEvent(new CustomEvent('voice:extract', {detail: {text: recording.transcript}})));
+    const organize = document.createElement('button');
+    organize.type = 'button'; organize.className = 'workspace-button compact'; organize.textContent = '会议整理';
+    organize.addEventListener('click', () => document.dispatchEvent(new CustomEvent('shixu:meeting', { detail: { text: recording.transcript, sourceId: recording.id, sourceType: 'recording', title: recording.title } })));
+    actions.append(extract, organize);
     transcriptHead.append(label, actions);
 
     const transcript = document.createElement('textarea');
@@ -2237,9 +2245,12 @@
 
   const WINDOWS_REFRESH_AFTER_OPEN_MS = 380;
 
+  let windowsLastRefreshAt = 0;
   async function refreshWindows(force = false) {
     if (!window.NotchHome?.isVisible?.('windows')) return;
     if (windowsLoading || !window.notchAPI || (!force && (!workspaceExpanded || workspaceTab !== 'home'))) return;
+    if (!force && Date.now() - windowsLastRefreshAt < 1000) return;
+    windowsLastRefreshAt = Date.now();
     windowsLoading = true;
     // 只有首次（还没有任何内容）才先画占位；已有列表时不为了一次轮询把它拆掉重建。
     if (windowsSignature === null) renderWindows();
@@ -2804,7 +2815,10 @@
 
   window.NotchWorkspace = {
     refreshWindows,
+    openRecording(id) { selectedRecordingId = id; window.VoiceTasks.open('recordings'); renderRecordings(); },
     startRecording,
+    stopRecording,
+    openTranscriptionSettings,
     isRecordingActive: isRecordingBusy,
   };
 })();

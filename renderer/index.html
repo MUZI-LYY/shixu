@@ -7,8 +7,8 @@
       content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TO-DO Panel</title>
-    <link rel="stylesheet" href="styles.css" />
+    <title>拾序</title>
+    <link rel="stylesheet" href="styles.css" /><link rel="stylesheet" href="assistant.css" />
   </head>
   <body>
     <div id="app" class="collapsed">
@@ -17,7 +17,7 @@
         class="notch"
         role="button"
         tabindex="0"
-        aria-label="展开 TO-DO Panel"
+        aria-label="展开拾序"
         aria-expanded="false"
         aria-controls="panel"
       >
@@ -71,13 +71,14 @@
               </svg>
               <span class="tab-label">录制</span>
             </button>
-            <button class="tab" id="tab-button-credentials" type="button" data-tab="credentials" role="tab" aria-controls="tab-credentials" aria-selected="false" tabindex="-1">
+            <button class="tab" id="tab-button-ocr" type="button" data-tab="ocr" role="tab" aria-controls="tab-ocr" aria-selected="false" tabindex="-1"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5M7 8h10M12 8v9M9 17h6"/></svg><span class="tab-label">识字翻译</span></button>
+            <button class="tab" id="tab-button-credentials" title="密钥" aria-label="密钥" type="button" data-tab="credentials" role="tab" aria-controls="tab-credentials" aria-selected="false" tabindex="-1">
               <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="8" cy="15" r="4" /><path d="m11 12 7-7 2 2-2 2 1.5 1.5-2.5 2.5-1.5-1.5-2 2" />
               </svg>
               <span class="tab-label">密钥</span>
             </button>
-            <button class="tab" id="tab-button-settings" type="button" data-tab="settings" role="tab" aria-controls="tab-settings" aria-selected="false" tabindex="-1">
+            <button class="tab" id="tab-button-settings" title="设置" aria-label="设置" type="button" data-tab="settings" role="tab" aria-controls="tab-settings" aria-selected="false" tabindex="-1">
               <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="3" />
                 <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.17.38.48.7.86.88.34.16.7.22 1.06.2H21v4h-.09a1.7 1.7 0 0 0-1.51.92Z" />
@@ -98,6 +99,22 @@
 
         <div class="panels" id="panels">
           <section id="tab-home" class="tab-panel" role="tabpanel" aria-labelledby="tab-button-home" aria-hidden="true" inert>
+            <div class="voice-home-layout">
+              <main class="voice-primary">
+                <header class="voice-heading"><div><span id="voice-today"></span><h1>拾序 · 待办与安排</h1></div><button id="voice-configure" class="voice-text-button" type="button">API 设置</button></header>
+                <form id="voice-form" class="voice-composer">
+                  <label class="sr-only" for="voice-input">要处理的事务</label>
+                  <textarea id="voice-input" rows="2" maxlength="8000" placeholder="明天交房租；把健身改到后天……"></textarea>
+                  <div class="voice-composer-actions"><button type="button" id="voice-record">说一句</button><button type="button" id="shixu-capture">存到待整理</button><span id="voice-mode">基础解析可直接试用</span><button type="submit" id="voice-submit" class="voice-primary-button">理解并预览 ↵</button></div>
+                </form>
+                <p id="voice-status" class="voice-status" role="status" aria-live="polite">任务保存在本机工作区</p>
+                <div class="voice-subnav" role="group" aria-label="首页内容"><button type="button" class="selected" data-voice-view="tasks">我的待办 <span id="voice-task-count">0</span></button><button type="button" data-voice-view="plan">处理结果</button><button type="button" data-voice-view="history">操作记录</button><button type="button" id="shixu-inbox-open">待整理 <span id="shixu-inbox-count">0</span></button><button type="button" id="voice-all-tasks" class="voice-text-button">全部待办 ↗</button></div>
+                <section id="voice-tasks" class="voice-scroll" aria-label="待办列表"></section>
+                <section id="voice-plan" class="voice-scroll" aria-label="处理结果" hidden></section>
+                <section id="voice-history" class="voice-scroll" aria-label="操作记录" hidden></section>
+                <div class="shixu-workflow-bar"><button id="shixu-meeting-open" type="button">会议整理</button><button id="shixu-daily-open" type="button">每日安排</button></div><footer class="voice-calendar"><div><strong>日历安排</strong><button id="voice-calendar-connect" class="voice-text-button" type="button">连接 Apple 日历</button></div><p id="voice-calendar-status">读取日历检查空闲时间；任务可确认后加入「拾序」日历。</p><div id="voice-calendar-events"></div></footer>
+              </main>
+              <aside class="voice-tools" aria-label="个人工具"><header><span>随手可用</span><button id="voice-ocr-shortcut" class="voice-text-button" type="button">截图识字 ↗</button></header>
             <div class="home-bento" id="home-bento" aria-label="可长按拖动调整的首页布局">
               <!-- 本地音乐播放器控制：播放器由主进程识别，可点标题切换 -->
               <section class="tile home-music" id="home-music" data-home-module="music" data-widget-size="medium" aria-label="音乐播放器">
@@ -176,8 +193,8 @@
               <!-- 镜子：静态人像封面；点击切换实时镜头 -->
               <section class="tile home-mirror" data-home-module="mirror" data-widget-size="medium">
                 <button class="mirror-stage" id="mirror-stage" type="button" aria-label="打开实时镜子" aria-pressed="false">
-                  <img class="mirror-photo" src="assets/mirror-portrait.jpg" alt="" draggable="false" />
-                  <img class="mirror-photo mirror-liquid-layer" src="assets/mirror-portrait.jpg" alt="" draggable="false" />
+                  <img class="mirror-photo" src="assets/mirror-placeholder.svg" alt="" draggable="false" />
+                  <img class="mirror-photo mirror-liquid-layer" src="assets/mirror-placeholder.svg" alt="" draggable="false" />
                   <video class="mirror-video" id="mirror-video" muted playsinline aria-hidden="true"></video>
                   <canvas class="mirror-water-canvas" id="mirror-water-canvas" aria-hidden="true"></canvas>
                   <span class="mirror-pixel-reveal" id="mirror-pixel-reveal" aria-hidden="true"></span>
@@ -222,6 +239,17 @@
                 <div class="command-list" id="command-list"></div>
               </section>
 
+            </div>
+              </aside>
+            </div>
+          </section>
+
+          <section id="tab-ocr" class="tab-panel" role="tabpanel" aria-labelledby="tab-button-ocr" aria-hidden="true" inert>
+            <div class="ocr-page">
+              <header class="ocr-header"><div><h1>截图识字与翻译</h1><p>本地识别中英文，原文可编辑、复制；中文翻译使用已配置模型。</p></div><button id="ocr-configure" class="workspace-button compact" type="button">API 设置</button></header>
+              <div class="ocr-toolbar"><button type="button" class="voice-primary-button" id="ocr-capture">框选截图</button><button type="button" id="ocr-clipboard">识别剪贴板图片</button><button type="button" id="ocr-file">打开图片</button><label><input type="checkbox" id="ocr-auto-translate" /> 识别后自动翻译</label></div>
+              <p id="ocr-status" class="voice-status" role="status" aria-live="polite">框选屏幕区域，或粘贴一张截图。OCR 在本机完成。</p>
+              <div class="ocr-columns"><section><header><label for="ocr-source">识别原文</label><button type="button" id="ocr-copy-source">复制原文</button></header><textarea id="ocr-source" spellcheck="false" placeholder="识别结果会显示在这里，也可以粘贴英文……"></textarea><footer><button type="button" id="ocr-to-note">保存到笔记</button><button type="button" id="ocr-to-task">提取待办</button><button type="button" id="ocr-translate" class="voice-primary-button">翻译为中文 →</button></footer></section><section><header><label for="ocr-translation">中文译文</label><button type="button" id="ocr-copy-translation">复制译文</button></header><textarea id="ocr-translation" spellcheck="false" placeholder="点击“翻译为中文”生成译文。"></textarea><footer><span>翻译会将原文发送至你配置的模型服务。</span></footer></section></div>
             </div>
           </section>
 
@@ -405,8 +433,14 @@
           </section>
 
           <section id="tab-settings" class="tab-panel" role="tabpanel" aria-labelledby="tab-button-settings" aria-hidden="true" inert>
-            <div class="settings-page" id="settings-page" aria-label="TO-DO Panel 设置">
+            <div class="settings-page" id="settings-page" aria-label="拾序设置">
               <div class="settings-column settings-column-primary">
+<section class="tile settings-card shixu-hotkeys"><div class="settings-card-heading"><div><span class="tile-label">全局操作</span><strong>语音与录音快捷键</strong></div></div>
+<p>语音待办：按住说话，松开生成预览。会议录音：按一次开始，再按一次结束。</p>
+<label><input id="shixu-voice-enabled" type="checkbox" /> 启用语音待办 <input id="shixu-voice-key" aria-label="语音待办快捷键" readonly placeholder="点击后按下组合键" /></label>
+<label><input id="shixu-meeting-enabled" type="checkbox" /> 启用会议录音 <input id="shixu-meeting-key" aria-label="会议录音快捷键" readonly placeholder="点击后按下组合键" /></label>
+<p>点击输入框后按 ⌃ / ⌥ / ⌘ 与字母、数字或空格的组合。两组快捷键需要输入监控权限；语音转写需要百炼 API。</p>
+<button id="shixu-hotkeys-save" class="workspace-button compact" type="button">保存快捷键</button><p id="shixu-hotkeys-status" role="status"></p></section>
                 <section class="tile settings-card settings-api-card">
                   <div class="settings-card-heading">
                     <div><span class="tile-label">智能能力</span><strong>API 配置</strong></div>
@@ -453,7 +487,7 @@
 
               <div class="settings-column settings-column-secondary">
                 <section class="tile settings-card settings-mirror-card">
-                  <img id="settings-mirror-preview" src="assets/mirror-portrait.jpg" alt="当前首页镜子配图" draggable="false" />
+                  <img id="settings-mirror-preview" src="assets/mirror-placeholder.svg" alt="当前首页镜子配图" draggable="false" />
                   <div>
                     <span class="tile-label">首页镜子</span>
                     <strong>封面图片</strong>
@@ -491,7 +525,7 @@
                     </span>
                   </div>
                   <label class="settings-device-row settings-auto-launch-row">
-                    <div><span>开机自动启动</span><strong>登录后自动运行 TO-DO Panel</strong></div>
+                    <div><span>开机自动启动</span><strong>登录后自动运行 拾序</strong></div>
                     <input id="settings-auto-launch" type="checkbox" aria-label="开机自动启动" />
                     <i aria-hidden="true"></i>
                   </label>
@@ -520,7 +554,7 @@
             <div class="transcription-settings-head">
               <div>
                 <strong id="transcription-settings-title">API 配置</strong>
-                <span>实时转写与智能命名 · 密钥仅加密保存在本机</span>
+                <span>语音转写、事务理解与翻译 · 密钥仅加密保存在本机</span>
               </div>
               <button id="transcription-settings-close" type="button" aria-label="关闭转写设置">×</button>
             </div>
@@ -545,10 +579,10 @@
                 <input id="transcription-workspace" type="text" placeholder="业务空间 ID" autocomplete="off" spellcheck="false" />
               </label>
             </div>
-            <div class="api-settings-divider"><span>智能命名与分组</span><small>OpenAI-compatible</small></div>
+            <div class="api-settings-divider"><span>事务理解、翻译与智能命名</span><small>OpenAI-compatible</small></div>
             <div class="transcription-field api-key-field">
               <div class="api-field-heading">
-                <label for="llm-api-key">DeepSeek API Key</label>
+                <label for="llm-api-key">模型 API Key</label>
                 <small id="llm-api-status" data-state="empty">未配置</small>
               </div>
               <input id="llm-api-key" type="password" placeholder="已配置时留空即可" autocomplete="off" spellcheck="false" />
@@ -571,6 +605,7 @@
             </div>
           </section>
         </div>
+        <div id="shixu-overlay" class="shixu-overlay" hidden><section role="dialog" aria-modal="true" aria-labelledby="shixu-dialog-title" class="shixu-dialog"><header><h2 id="shixu-dialog-title"></h2><button type="button" id="shixu-dialog-close" aria-label="关闭">×</button></header><div id="shixu-dialog-body"></div><p id="shixu-dialog-status" role="status"></p></section></div>
         <div class="status-toast" id="status-toast" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true" hidden>
           <span id="status-toast-message"></span>
           <button id="status-toast-action" type="button" hidden>撤销</button>
@@ -580,8 +615,12 @@
     <script src="../platform.js"></script>
     <script src="domain.js"></script>
     <script src="effects.js"></script>
+    <script src="assistant-domain.js"></script>
     <script src="app.js"></script>
     <script src="workspace.js"></script>
+    <script src="assistant.js"></script>
+    <script src="workflow-domain.js"></script>
+    <script src="shixu.js"></script>
     <script src="icon-motion.js"></script>
   </body>
 </html>

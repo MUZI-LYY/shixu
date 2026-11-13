@@ -139,9 +139,9 @@ if (statusToastAction) {
 
 window.addEventListener('beforeunload', () => dismissStatusToast(true));
 // 应用退出前主进程会来问一次：把还在撤销窗口内的删除立即执行掉，再回执。
-window.notchAPI?.onFlushPending?.(() => {
-  dismissStatusToast(true);
-  window.notchAPI.flushDone();
+window.notchAPI?.onFlushPending?.(async () => {
+  try { await window.Shixu?.prepareQuit(); dismissStatusToast(true); }
+  finally { window.notchAPI.flushDone(); }
 });
 
 function loadData() {
@@ -182,19 +182,22 @@ function normalizeTodoItems(value) {
           ? new Date(Date.parse(String(item.deadline))).toISOString()
           : '',
         remindedAt: Math.max(0, Number(item.remindedAt) || 0),
+        ...(item.datePrecision ? { datePrecision: item.datePrecision } : {}),
+        ...(Object.hasOwn(item, 'durationMinutes') ? { durationMinutes: Math.max(0, Number(item.durationMinutes) || 0) } : {}),
       };
     })
     .filter(Boolean);
 }
 
 function saveData(data) {
+  document.dispatchEvent(new CustomEvent('notch:todos-changed'));
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (e) {
     // ignore quota errors
   }
   if (window.notchAPI && typeof window.notchAPI.scheduleTodoReminders === 'function') {
-    const reminders = PRIORITIES.flatMap((priority) => data[priority] || []);
+    const reminders = PRIORITIES.flatMap((priority) => data[priority] || []).filter(item => item.datePrecision !== 'day');
     window.notchAPI.scheduleTodoReminders(reminders).catch(() => {});
   }
 }
@@ -235,7 +238,7 @@ function applyTodoCategoryNames() {
 }
 if (window.notchAPI && typeof window.notchAPI.scheduleTodoReminders === 'function') {
   window.notchAPI
-    .scheduleTodoReminders(PRIORITIES.flatMap((priority) => data[priority] || []))
+    .scheduleTodoReminders(PRIORITIES.flatMap((priority) => data[priority] || []).filter(item => item.datePrecision !== 'day'))
     .catch(() => {});
 }
 
@@ -285,10 +288,10 @@ function todoItemHtml(priority, item) {
   const safeId = escapeHtml(item.id);
   const safeText = escapeHtml(item.text);
   const deadline = Number.isFinite(Date.parse(String(item.deadline || '')))
-    ? todoDeadlineFormat.format(new Date(item.deadline))
+    ? (item.datePrecision === 'day' ? new Intl.DateTimeFormat('zh-CN', {month:'numeric',day:'numeric'}).format(new Date(item.deadline)) : todoDeadlineFormat.format(new Date(item.deadline)))
     : '';
   const toggleLabel = item.done ? `恢复未完成：${safeText}` : `标记完成：${safeText}`;
-  const battery = window.NotchDomain.todoTimeBattery(item, Date.now());
+  const battery = item.deadline ? window.NotchDomain.todoTimeBattery(item, Date.now()) : null;
   // 逾期项整条填满红色并只显示一个白色感叹号：剩余 0% 是「快到了」，
   // 逾期是「已经欠账」，两者不能长得一样。
   const batteryHtml = battery
@@ -787,7 +790,7 @@ if (window.notchAPI && typeof window.notchAPI.onMetricsChanged === 'function') {
 
 // ============ Tab 切换 ============
 const TAB_KEY = 'notch-active-tab';
-const ALL_TABS = ['home', 'todo', 'notes', 'links', 'recordings', 'credentials', 'clip', 'settings'];
+const ALL_TABS = ['home', 'todo', 'notes', 'links', 'recordings', 'ocr', 'credentials', 'clip', 'settings'];
 let TABS = ALL_TABS.filter((name) => name !== 'clip');
 let tabButtons = Array.from(document.querySelectorAll('.tab:not([hidden])'));
 const tabPanels = Array.from(document.querySelectorAll('.tab-panel'));
@@ -812,7 +815,7 @@ function applyFeatureSettings(settings) {
   tabButtons.forEach((button) => button.classList.remove('tab-split-start'));
   document.getElementById('tabs')?.classList.toggle('is-split', tabButtons.length > 4);
   if (tabButtons.length > 4) {
-    tabButtons[Math.ceil(tabButtons.length / 2)]?.classList.add('tab-split-start');
+    tabButtons[Math.ceil((tabButtons.length - 2) / 2)]?.classList.add('tab-split-start');
   }
   if (!TABS.includes(activeTab)) setActiveTab('home');
   requestAnimationFrame(positionIndicator);
@@ -1144,6 +1147,8 @@ function applyTodoEditorSelection(markManual = true) {
     const todo = (data[priority] || []).find((item) => item.id === id);
     if (!todo) return false;
     todo.deadline = deadline;
+    todo.datePrecision = 'time';
+    todo.remindedAt = 0;
     saveData(data);
   } else {
     const trigger = document.querySelector(`.todo-deadline-trigger[data-deadline-priority="${priority}"]`);
@@ -1327,7 +1332,7 @@ PRIORITIES.forEach((priority) => {
     } else if (action === 'save-edit') {
       const todo = (data[priority] || []).find((candidate) => candidate.id === id);
       const name = item.querySelector('.todo-inline-name')?.value.trim() || '';
-      if (!todo || !name || !todo.deadline) return;
+      if (!todo || !name) return;
       editingTodo = null;
       editTodo(priority, id, name, todo.deadline);
     } else if (action === 'delete') {
@@ -2984,6 +2989,7 @@ if (homeBento) {
   };
 
   homeBento.addEventListener('pointerdown', (event) => {
+    if (homeBento.closest('.voice-tools')) return;
     if (event.button !== 0 || event.isPrimary === false) return;
     const tile = event.target.closest('[data-home-module]');
     if (!tile || tile.hidden || event.target.closest('button, input, textarea, select, a, audio, [contenteditable]')) return;
@@ -3972,3 +3978,31 @@ renderAll();
 renderClipList(); // 首屏确保 clip-list DOM 就绪时渲染一次（幂等）
 renderClipFavs(); // 首屏渲染收藏剪贴块
 initTab();
+
+// All assistant mutations share the existing task store and renderer.
+window.VoiceTasks = {
+  list: () => PRIORITIES.flatMap(category => data[category].map(item => ({...item, category}))),
+  categories: () => ({...todoCategoryNames}),
+  addNote(content, title = '') {
+    const notes = loadNoteArchive();
+    if (notes.length >= 200) throw new Error('笔记已达到 200 条，请先整理后保存');
+    const item = { id: generateId(), title, content, createdAt: Date.now(), updatedAt: Date.now() };
+    notes.unshift(item); localStorage.setItem(NOTE_ARCHIVE_KEY, JSON.stringify(notes));
+    selectedNoteId = item.id; renderNotesLibrary(); return item.id;
+  },
+  commit(next) {
+    const serialized = JSON.stringify(next);
+    localStorage.setItem(STORAGE_KEY, serialized);
+    if (localStorage.getItem(STORAGE_KEY) !== serialized) throw new Error('任务保存失败');
+    PRIORITIES.forEach(category => {
+      data[category].splice(0, data[category].length, ...next[category]);
+      renderListKeepingDraft(category);
+      updateCount(category);
+    });
+    saveData(data);
+  },
+  snapshot: () => JSON.parse(JSON.stringify(data)),
+  open: name => { setMode(true); return setActiveTab(name); },
+  flush: () => window.notchAPI?.saveWorkspaceData(collectLocalStorageSnapshot()),
+  toast: showStatusToast,
+};

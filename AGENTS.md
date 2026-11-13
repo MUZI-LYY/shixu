@@ -1,88 +1,75 @@
-# TO-DO Panel
+# 拾序 · Shixu
 
-一个常驻 macOS 屏幕顶部的本地工作台。默认折叠成物理刘海大小，点击从顶部展开，包含**首页 / 待办 / 笔记 / 链接 / 录制 / 密钥**等页面；剪贴板默认关闭、可从菜单栏「显示功能」启用；还可接收 Codex / Claude Code / GPT 的本机完成事件并关联当前窗口。
+适用于本仓库的开发与发布约定。拾序以 TO-DO Panel 为底座，是常驻 macOS 顶部的个人工作台，首页以待办为主，保留笔记、链接、录音、音乐、番茄钟、密钥等工具，并提供语音待办、待整理、会议整理、每日安排、OCR 与 Apple 日历写入。
 
-项目为单一 Electron 架构：折叠态、展开工作区、任务完成提醒与 Hover + Space 唤出都在 Electron 主进程和渲染层内实现，`npm start` 是唯一运行路径。
+## 范围与事实依据
 
-> **文档准绳**：产品行为以 [README.md](README.md) 为唯一事实来源。本文与 README 冲突时以 README 为准。
+- 用户明确选择的当前交付范围是 **Mac Apple Silicon（arm64）试用版**，目标 macOS 13+。上游 Windows 代码与构建脚本仅作为历史保留，不构成本分支发布要求或支持承诺。
+- 本仓库的当前产品说明见 [README.md](README.md)。上游历史资料见 [docs/upstream-readme.md](docs/upstream-readme.md)，不得把其中的版本、下载链接、平台承诺或流程当作拾序现状。
+- 需求约定以用户明确决定为准；实现与验证状态以当前代码、测试和实际环境证据为准。源码存在不等于真实语音、日历账户与系统权限已验收。
+- 保持暗色界面。应用名为拾序，使用 `build/shixu-icon.png` / `.icns` 的深色发光叠页图标；菜单栏保留简洁模板入口图标。
 
-## 技术栈
+## 技术栈与命令
 
-- 桌面端：Electron 44 + 原生 HTML/CSS/JavaScript，无渲染层构建步骤
-- 官网：React 19 + Vinext + 原生 CSS，位于 `website/`
-- 数据：LocalStorage + `userData/clipboard-images/` + `userData/recordings/`，无后端和云同步
-- 包管理器：npm
-- Node：桌面端使用 Node 18+；官网要求 Node 22.13.0+
+- Electron 44、原生 HTML/CSS/JavaScript，无渲染层构建步骤。
+- 原生桥使用 Objective-C / clang、Apple Vision、EventKit 与全局按键监听；需要 macOS Command Line Tools。
+- 使用 Node.js 22.13+ 与 npm。用户内容保存在本机，无自建云后端或多设备同步。
+- `npm ci && npm start`：开发启动；`prestart` 构建原生桥。
+- `npm test`：Node 检查、原有 Electron 回归与语法检查。
+- `node scripts/run-shixu-check.js`：新流程 UI、IPC 与重启检查，外部模型、音频、日历为模拟。
+- `node scripts/run-assistant-check.js`：事务、真实本地 OCR 与剪贴板验收。
+- `npm run build`：构建本地签名 Mac DMG，不自动上传。按任务已有授权执行，无需重复索取相同打包批准。
+- `website/` 保留网站源码；站点部署是独立操作，不因提交代码自动推断上线状态。
 
-## 命令
-
-- 桌面开发：`npm install && npm start`
-- 桌面检查：`npm test`
-- 桌面打包：`npm run build`（只在用户明确确认后执行）
-- 官网开发：`cd website && npm install && npm run dev`
-- 官网检查：`cd website && npm run lint && npm run build`
-
-## 目录结构
+## 目录
 
 ```text
-.
-├── main.js                 # Electron 主进程：窗口、定位、菜单栏、剪贴板、媒体与通知服务
-├── main-services.js        # 可单测的纯领域服务（无 Electron 依赖）
-├── preload.js              # contextBridge 安全桥接
-├── renderer/               # 桌面界面与交互（index.html / styles.css / app.js / workspace.js / notification.*）
-├── build/                  # DMG 打包钩子、entitlements 与应用图标
-├── scripts/                # Codex 与 Claude Code 的通知转发脚本
-├── tests/                  # Node 单元测试
-├── docs/                   # 设计说明、ADR 与验收图
-├── website/                # 官网 React/Vinext 源码
-└── package.json
+main.js / preload.js        主进程、窗口与安全桥
+main/                      事务、工作流、日历、快捷键服务
+renderer/                  界面、任务与资料、工作流交互
+native/                    macOS 原生桥
+build/                     图标、签名与打包钩子
+scripts/ / tests/           构建与验证
+docs/ / third_party/        产品资料、上游记录与许可证
+website/                   保留的网站源码
 ```
 
-## 当前产品约束
+## 数据与界面约束
 
-- 双平台：macOS 13+ arm64 与 Windows 10/11 x64 共用代码及版本。Windows 使用 `npm run build:win` 生成 NSIS EXE；发布必须两个平台检查通过后汇总至同一 Release。
-- Windows：折叠态为 200 × 38 DIP，贴工作区顶部居中并避开任务栏；隐藏当前窗口和汽水音乐组件，但不修改用户保存的显隐偏好；剪贴板只复制，提醒点击关闭。
-- 便携媒体路径：LocalStorage / workspace.json 中新写入的录音与剪贴板图片使用 `/` 分隔的相对路径，系统加密密钥不保证跨电脑迁移。
+- 保持 `~/Library/Application Support/Mac Voice Workspace/` 数据目录与 `com.personal.voiceworkspace` App ID，防止更名丢失旧资料。
+- 保留 `notch-todo-data` 中 P0–P3 的结构与原分类名称存储键。新功能字段应兼容旧数据，不能以迁移名义清空资料。
+- 截止日期与日历执行时段分开；日历写入必须用户确认，同 taskId 更新关联事件，避免重复创建。不宣称日历双向同步。
+- 会议整理、每日安排是同一个调度入口的两套专业流程。模型输出不能直接修改任务或日历；必须校验、预览和确认。
+- 临时内容列表统一称「待整理」，不是邮箱。移出条目不应删除原录音或派生任务。
+- 折叠态保持顶部定位；原展开内容区 `1240 × 540`，窄屏/矮屏保留安全距；不要把入口放到物理刘海不可点击区。
+- 密钥、设置位于右上角。镜子默认使用中性摄像头占位图，不使用上游人物封面。
+- 录音、剪贴板图片使用相对路径，禁止把图片 dataURL 放入 LocalStorage；系统加密 Key 不保证跨机器可解密。
+- API Key 必须使用系统安全存储或环境配置，不写入代码、日志、截图、Prompt 或发布材料。
+- 链接只接受安全的公开 http/https，保留本机、内网与不安全重定向拦截。
+- 剪贴板、开机启动、AI 会话监测按当前默认开关保留，未经用户启用不扩大采集范围。
+- 本机通知只监听 `127.0.0.1:43822`，沿用来源白名单；不得对公网开放。
 
-- 折叠态：宽 200px，高度等于当前屏幕菜单栏高度，不得超出物理刘海
-- 展开态：各页内容区统一 `1240 × 540`；窗口总高为 `76 + 540`，窄屏与矮屏保留 24px 安全距
-- 待办：2 × 2 布局，一次回车新增，颜色为红 / 橙 / 绿 / 蓝。内部存储键仍是 `P0`–`P3`（`notch-todo-data` 结构不可变更），但界面显示名默认「课程 / 自媒体&写作 / Vibe coding / 日常」且用户可改名（存 `notch-todo-category-names-v1`）；截止时间默认当天 23:30，到期前一小时提醒
-- 剪贴板：默认关闭（`DEFAULT_FEATURES.clip = false`），可在菜单栏「显示功能」中启用。历史记录由主进程轮询采集，不再占用任何全局快捷键（见 `clipboardServicePolicy`）
-- 链接：只允许公开 http/https；主进程抓取标题时必须阻止本机、内网与不安全重定向
-- 录制：音频写入 `userData/recordings/`，转写与元数据保存在 LocalStorage；可选百炼 Qwen3-ASR 实时转写，API Key 必须经 `safeStorage` 加密或环境变量读取
-- 镜子：首页中间列使用 1:1 方形；只有主动点击才开启，离开首页或收起时立即释放摄像头 track
-- 当前窗口：通过 macOS 辅助功能枚举和聚焦，使用系统应用图标；同应用多窗口编号；隐藏项保存在 LocalStorage；聚焦 IPC 只接受最近扫描缓存中的窗口 ID
-- 笔记：首页随笔记保存后进入独立笔记页，可搜索、重命名、编辑和删除
-- 动效：窗口边界变更不使用系统动画；视觉动效由渲染层完成，并支持 `prefers-reduced-motion`
-- 通知：独立 `400 × 96` 无焦点窗口；HTTP 只监听 `127.0.0.1:43821` 的 `/notify/<source>`，来源白名单 `codex` / `claude` / `gpt`；Codex 与 Claude Code 分别由 `scripts/codex-notify.js`、`scripts/claude-notify.js` 转发，子代理结束与云端会话不弹提醒
+## 系统能力生命周期
 
-## 代码规范
+- 麦克风仅由用户明确点击或已启用快捷键触发；松开、停止、睡眠、锁屏、退出与启动取消必须处理释放。
+- 全局语音与会议快捷键独立配置，与面板唤出组合互相检查冲突。真实系统权限与实体按键的验证不能用 mock 结果替代。
+- 镜子只在主动点击时开启，离开首页或收起时立即释放摄像头。
+- 当前窗口的聚焦 IPC 只接受最近扫描缓存中的窗口 ID。
+- 渲染层禁止直接 require Electron；所有 IPC 经 preload 的 contextBridge。
+- 日期、排程和保存失败须明确反馈；没有日历读取结果时不能当作空闲。
 
-- 主进程文件 camelCase，常量大写下划线
-- 渲染逻辑放在 `renderer/`，与主进程隔离
-- IPC 必须通过 `preload.js` 的 contextBridge 暴露
-- 视觉取值集中在 CSS 自定义属性中
+## 验证与发布
 
-## GitHub 推送与发布联动
+- 按改动影响完成必要检查。行为变更验证对应行为；图标或文案更改无需机械增加全套新测试。
+- 测试使用隔离 profile；不把用户真实录音或日历账户作为自动化写入测试数据。
+- 报告区分单元/模拟/桌面/真实账户结果，不声称模型质量、真人语音或权限已通过未执行的验收。
+- GitHub 目标为用户确认的 `MUZI-LYY/shixu`；保留 TO-DO Panel、v2do、macOCR 的许可证与归属，不推回上游仓库。
+- 推送前核对 `package.json`、`package-lock.json`、CHANGELOG、README、Release 说明和网站下载地址；不得指向上游安装包。
+- 本分支发布只要求 Mac arm64 DMG 与 SHA-256。匹配版本的 `v*.*.*` 标签触发 CI；CI 完成后验证 Release 资产和实际下载路径。Windows 不属于本次发布范围。
+- 网站未部署时不得声称 Pages 已在线。若用户明确授权部署，应检查实际页面下载入口指向本仓库资产。
+- 用户授权打包或发布后，在相同目标/对象/范围内继续完成，不新增重复审批。仓库公开范围、账号或外部后果不明确时，先补足必要信息。
+- 禁止提交 `node_modules`、`dist` / `dist.noindex`、本机用户数据、API Key、日志和未脱敏截图；保留必要可复现源码与测试材料。
 
-- 任何产品更新推送到 GitHub 前，必须联动检查版本号、`CHANGELOG.md`、README 当前稳定版本与下载入口、GitHub Pages 下载按钮。
-- 正式发布必须保证 `package.json` 与 `package-lock.json` 版本一致，推送匹配的 `v*.*.*` 标签，并在 GitHub Actions 完成后验证 Release 的 DMG / SHA-256 资产与 Pages 实际下载指向。
-- 官网下载按钮分别从 GitHub `releases/latest` 动态解析当前版本的 `arm64.dmg` 与 `windows-x64-setup.exe`，不得留下过期固定链接或跨平台误下载。验证两个安装包及各自 SHA-256。
+## 上下文续接
 
-## NEVER
-
-- NEVER 在渲染进程直接 `require('electron')`
-- NEVER 让窗口可被拖出刘海位置；显示与模式切换必须贴顶居中
-- NEVER 让摄像头常驻；离开首页或收起时立即释放 track
-- NEVER 在用户未主动点击时启动麦克风；结束录音或退出应用时必须释放音频 track
-- NEVER 把剪贴板图片 dataURL 存入 LocalStorage
-- NEVER 提交 `node_modules` 或 `dist`
-- NEVER 在没有用户确认时打包或发布桌面应用
-
-## 压缩指令
-
-执行 `/compact` 时必须保留：
-
-- 当前窗口行为与样式细节
-- LocalStorage 数据结构
-- 已知 macOS、多屏、菜单栏与摄像头适配问题
+续接时保留：用户已确认方向与授权、当前修改及验证证据、旧数据兼容性、macOS 权限/音源/多屏边界、真实账户尚未实测的事项。

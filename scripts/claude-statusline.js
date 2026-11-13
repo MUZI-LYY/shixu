@@ -13,7 +13,7 @@
 const http = require('node:http');
 
 const HOST = '127.0.0.1';
-const PORT = 43821;
+const PORT = 43822;
 const TIMEOUT_MS = 600;
 
 function readStdin() {

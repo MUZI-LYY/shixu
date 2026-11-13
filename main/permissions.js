@@ -21,7 +21,7 @@ const PERMISSIONS = [
   {
     id: 'screen-recording',
     title: '屏幕录制',
-    reason: '读取其他应用的窗口标题。不会录制或保存屏幕内容；缺少时「当前窗口」列表为空。',
+    reason: '读取其他应用的窗口标题，以及主动框选截图进行 OCR。截图识别在本机完成，临时图片识别后删除。',
     required: true,
     needsRelaunch: true,
   },

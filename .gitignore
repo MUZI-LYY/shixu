@@ -28,3 +28,6 @@ website/public/product-captures/raw/
 
 # Local portable toolchain
 .tools/
+
+# Rebuilt by npm run build:native; never publish a local compiled helper in source.
+native/workspace-native
